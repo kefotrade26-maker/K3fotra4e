@@ -482,11 +482,12 @@ app = Flask(__name__, static_folder=_here, static_url_path="")
 
 @app.route("/")
 def index():
-    html_file = (
-        "dashboard_2.html"
-        if os.path.isfile(os.path.join(_here, "dashboard_2.html"))
-        else "dashboard.html"
-    )
+    if os.path.isfile(os.path.join(_here, "dashboard_3.html")):
+        html_file = "dashboard_3.html"
+    elif os.path.isfile(os.path.join(_here, "dashboard_2.html")):
+        html_file = "dashboard_2.html"
+    else:
+        html_file = "dashboard.html"
     return send_from_directory(_here, html_file)
 
 
@@ -700,7 +701,7 @@ def main():
     print(f"  Listening on : http://127.0.0.1:8080")
     print("═" * 60)
     app.run(
-        host="127.0.0.1",
+        host="0.0.0.0",
         port=8080,
         debug=False,
         threaded=True,

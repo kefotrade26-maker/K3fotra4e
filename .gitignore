@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+venv/
+env/
+.venv/
+
+# Backups
+*.bak
+*.before_*.bak
+*.backup
+*~
+
+# Runtime data (never commit)
+MQL4/Files/*_M*.csv
+MQL4/Files/*.hst
+MQL4/Files/*.har
+MQL4/Files/bridge_telemetry.json
+MQL4/Files/*.tmp
+MQL4/Files/*.recovery.tmp
+history/
+logs/
+Reports/Experiment_*/
+Reports/Koveer_Audit_*/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp

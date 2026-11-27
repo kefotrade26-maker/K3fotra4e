@@ -1,0 +1,907 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KoveerBridge — Trading Intelligence Command Center</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --panel: #131a2e;
+    --panel-2: #1a2338;
+    --accent: #4ea1ff;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text: #e6ebf5;
+    --muted: #8a94ab;
+    --border: #243049;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  header.brand {
+    padding: 16px 24px;
+    background: linear-gradient(90deg, #0f1830 0%, #182345 55%, #0f1830 100%);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+  header.brand h1 { margin: 0; font-size: 21px; letter-spacing: 1px; font-weight: 700; }
+  header.brand h1 .amp { color: var(--accent); margin: 0 6px; }
+  header.brand .sub { color: var(--muted); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  header.brand button {
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); padding: 8px 14px;
+    border-radius: 8px; cursor: pointer; font-size: 13px;
+    transition: border-color .15s;
+  }
+  header.brand button:hover { border-color: var(--accent); }
+  header.brand button:disabled { opacity: .5; cursor: wait; }
+  header.brand .lang-btn {
+    min-width: 44px;
+    font-weight: 700;
+  }
+
+  section.kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    padding: 14px 18px 0;
+  }
+  .kpi {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    transition: border-color .2s;
+  }
+  .kpi:hover { border-color: var(--accent); }
+  .kpi .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .kpi .val {
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .kpi .meta {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  }
+  .pill.ok { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.4); }
+  .pill.warn { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.4); }
+  .pill.err { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.4); }
+  .pill .dot-s { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  main.workspace {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.3fr 1.7fr;
+    gap: 16px;
+    padding: 16px 18px;
+    min-height: 0;
+  }
+  @media (max-width: 1100px) { main.workspace { grid-template-columns: 1fr; } }
+
+  .col-left, .col-right {
+    display: flex; flex-direction: column; gap: 16px; min-height: 0;
+  }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .panel.grow { flex: 1; min-height: 320px; max-height: 560px; }
+  .panel header {
+    padding: 11px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .panel header h2 {
+    margin: 0; font-size: 12px; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted); font-weight: 600;
+  }
+  .panel header input.search {
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 5px 10px; font-size: 13px; min-width: 180px; outline: none;
+  }
+  .panel header input.search:focus { border-color: var(--accent); }
+  .scroll { overflow-y: auto; padding: 8px 10px 14px; flex: 1; min-height: 0; }
+
+  .insights-list { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .insight {
+    padding: 10px 12px; border-radius: 8px; border-left: 3px solid var(--accent);
+    background: var(--panel-2); font-size: 13px;
+  }
+  .insight.ok { border-left-color: var(--green); }
+  .insight.warn { border-left-color: var(--amber); }
+  .insight.error { border-left-color: var(--red); }
+  .insight.info { border-left-color: var(--accent); }
+  .insight .ititle { font-weight: 600; margin-bottom: 3px; }
+  .insight .idetail { color: var(--muted); font-size: 12px; line-height: 1.4; }
+
+  table.t-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.t-table th {
+    text-align: left; color: var(--muted); font-weight: 600;
+    padding: 9px 12px; border-bottom: 1px solid var(--border);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  table.t-table td {
+    padding: 9px 12px; border-bottom: 1px solid rgba(36,48,73,0.5);
+  }
+  table.t-table tr:last-child td { border-bottom: none; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .log-box {
+    max-height: 180px; overflow-y: auto; padding: 8px 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px; display: flex; flex-direction: column; gap: 4px;
+  }
+  .log-row { display: flex; gap: 10px; align-items: baseline; }
+  .log-ts { color: var(--muted); flex-shrink: 0; }
+  .log-lvl-ok { color: var(--green); }
+  .log-lvl-warn { color: var(--amber); }
+  .log-lvl-error { color: var(--red); }
+  .log-lvl-info { color: var(--accent); }
+
+  .cat {
+    color: var(--muted); font-size: 11px; letter-spacing: 2px;
+    text-transform: uppercase; padding: 10px 10px 6px;
+  }
+  .item {
+    padding: 8px 12px; margin: 2px 4px; border-radius: 8px;
+    cursor: pointer; display: flex; justify-content: space-between;
+    align-items: center; font-size: 13.5px;
+    border: 1px solid transparent;
+    transition: background .12s, border-color .12s;
+  }
+  .item:hover { background: var(--panel-2); }
+  .item.active {
+    background: rgba(34,197,94,0.12);
+    border-color: var(--green);
+  }
+  .item .badge {
+    font-size: 10px; color: var(--muted); letter-spacing: 1px;
+    display: flex; gap: 6px; align-items: center;
+  }
+  .item.active .badge { color: var(--green); }
+  .item .btn-add, .item .btn-remove {
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .item .btn-add:hover { border-color: var(--green); color: var(--green); }
+  .item .btn-remove:hover { border-color: var(--red); color: var(--red); }
+  .active-tag {
+    display: inline-block;
+    background: rgba(34,197,94,0.15);
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+  }
+
+  footer.status {
+    padding: 10px 18px; background: var(--panel);
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap; font-size: 12px; color: var(--muted);
+  }
+  footer.status b { color: var(--text); }
+  footer.status .dot {
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--green);
+    margin-right: 6px; vertical-align: middle;
+  }
+  footer.status .dot.err { background: var(--red); }
+  .toast {
+    position: fixed; bottom: 60px; right: 20px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    padding: 10px 16px; border-radius: 10px; font-size: 13px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    opacity: 0; transform: translateY(10px);
+    transition: opacity .2s, transform .2s; pointer-events: none;
+    z-index: 9999;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.err { border-color: var(--red); }
+
+/* ============================================================
+   KOVEERBRIDGE CINEMATIC IDENTITY
+   Presentation layer only — original API and JavaScript retained.
+   ============================================================ */
+:root {
+  --bg: #050914;
+  --panel: #0a1728;
+  --panel-2: #0e2035;
+  --accent: #25baff;
+  --green: #27d9a0;
+  --amber: #ffb84d;
+  --red: #ff3048;
+  --text: #edf6ff;
+  --muted: #849bb6;
+  --border: rgba(57, 139, 190, .25);
+  --glow-blue: 0 0 22px rgba(37,186,255,.14);
+  --glow-red: 0 0 22px rgba(255,48,72,.14);
+}
+* { box-sizing: border-box; }
+html, body { min-height:100%; }
+html { background:#050914; }
+body {
+  color:var(--text);
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(0,139,255,.16), transparent 34%),
+    radial-gradient(ellipse at 94% 12%, rgba(255,35,65,.10), transparent 29%),
+    radial-gradient(ellipse at 50% 100%, rgba(0,77,142,.12), transparent 42%),
+    linear-gradient(145deg,#040812 0%,#071326 52%,#050914 100%);
+  background-attachment:fixed;
+}
+header.brand {
+  position:relative;
+  padding:20px clamp(14px,3vw,38px);
+  background:linear-gradient(105deg,rgba(3,9,20,.98),rgba(7,24,44,.97) 56%,rgba(20,8,21,.98));
+  border-bottom:1px solid rgba(37,186,255,.30);
+  box-shadow:0 12px 40px rgba(0,0,0,.30);
+}
+header.brand:after {
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,#25baff 28%,#ff3048 72%,transparent);
+  opacity:.9;
+}
+header.brand h1 {
+  margin:0;font-size:clamp(23px,2.5vw,32px);font-weight:800;
+  letter-spacing:4px;text-transform:uppercase;
+  text-shadow:0 0 24px rgba(37,186,255,.24);
+}
+header.brand h1 .amp { color:var(--red);margin:0 0 0 4px; }
+header.brand .sub {
+  color:#9bb4ce;font-size:10px;letter-spacing:2.8px;
+  text-transform:uppercase;margin-top:7px;
+}
+.actions { gap:8px; }
+header.brand button,.actions a {
+  background:linear-gradient(180deg,#10253d,#091729)!important;
+  color:var(--text)!important;border:1px solid rgba(67,151,202,.34)!important;
+  border-radius:7px!important;transition:all .2s ease;
+  box-shadow:inset 0 1px rgba(255,255,255,.035);
+}
+header.brand button:hover,.actions a:hover {
+  border-color:var(--red)!important;box-shadow:var(--glow-red);
+  transform:translateY(-1px);
+}
+header.brand button:disabled { opacity:.5;transform:none; }
+section.kpi-strip {
+  padding:20px clamp(12px,2vw,28px) 4px;gap:13px;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+}
+.kpi {
+  position:relative;overflow:hidden;
+  background:linear-gradient(145deg,rgba(13,30,51,.98),rgba(6,15,29,.98));
+  border:1px solid rgba(54,137,188,.25);border-radius:10px;
+  padding:15px 16px;box-shadow:inset 0 1px rgba(255,255,255,.025),0 9px 28px rgba(0,0,0,.18);
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+}
+.kpi:before {
+  content:"";position:absolute;top:0;left:14px;right:14px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(37,186,255,.75),transparent);
+}
+.kpi:hover { border-color:rgba(37,186,255,.65);box-shadow:var(--glow-blue);transform:translateY(-2px); }
+.kpi .label { color:#89a8c5;letter-spacing:1.7px;font-size:10px; }
+.kpi .val { font-size:17px; }
+.kpi .meta { color:#748da9; }
+.pill { letter-spacing:.35px; }
+.pill.ok { background:rgba(39,217,160,.10);color:var(--green);border-color:rgba(39,217,160,.38); }
+.pill.warn { background:rgba(255,184,77,.10);color:var(--amber);border-color:rgba(255,184,77,.38); }
+.pill.err { background:rgba(255,48,72,.10);color:#ff5367;border-color:rgba(255,48,72,.42); }
+main.workspace { padding:18px clamp(12px,2vw,28px) 22px;gap:17px; }
+.col-left,.col-right { gap:17px; }
+.panel {
+  background:linear-gradient(155deg,rgba(10,24,42,.97),rgba(5,13,25,.985));
+  border:1px solid rgba(52,129,179,.25);border-radius:11px;
+  box-shadow:0 12px 32px rgba(0,0,0,.20),inset 0 1px rgba(255,255,255,.018);
+}
+.panel header {
+  min-height:47px;padding:12px 16px;
+  background:linear-gradient(90deg,rgba(16,43,68,.62),rgba(7,18,32,.20));
+  border-bottom:1px solid rgba(54,139,190,.22);
+}
+.panel header h2 { color:#b7cce0;font-size:11px;letter-spacing:1.65px; }
+.panel header h2:before {
+  content:"";display:inline-block;width:6px;height:6px;margin:0 9px 1px 0;
+  border-radius:50%;background:var(--red);box-shadow:0 0 10px rgba(255,48,72,.8);
+}
+.panel header input.search {
+  background:#071426;border-color:rgba(55,143,196,.34);border-radius:6px;
+}
+.panel header input.search:focus { border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,186,255,.08); }
+.scroll { scrollbar-color:#24445f #081321;scrollbar-width:thin; }
+.insight {
+  background:rgba(13,31,51,.82);border-radius:6px;
+  box-shadow:inset 0 1px rgba(255,255,255,.018);
+}
+.insight.ok { border-left-color:var(--green); }
+.insight.warn { border-left-color:var(--amber); }
+.insight.error { border-left-color:var(--red); }
+.insight.info { border-left-color:var(--accent); }
+table.t-table { font-size:12px; }
+table.t-table th { color:#8ba8c3;background:rgba(7,20,35,.72); }
+table.t-table td { border-bottom-color:rgba(47,107,146,.20); }
+table.t-table tbody tr:hover { background:rgba(37,186,255,.045); }
+.log-box { scrollbar-color:#24445f #081321;scrollbar-width:thin; }
+.log-row { padding:2px 0; }
+.cat { color:#7995b2;font-weight:700;letter-spacing:1.8px; }
+.item { border-radius:6px; }
+.item:hover { background:rgba(37,186,255,.075); }
+.item.active {
+  background:rgba(39,217,160,.075);
+  border-color:rgba(39,217,160,.48);
+  box-shadow:inset 2px 0 var(--green);
+}
+.item.active .badge { color:var(--green); }
+.item .btn-add,.item .btn-remove {
+  border-radius:5px;background:#0a1b2e;border-color:rgba(67,133,173,.35);
+}
+.item .btn-add:hover { border-color:var(--green);box-shadow:0 0 12px rgba(39,217,160,.12); }
+.item .btn-remove:hover { border-color:var(--red); }
+.active-tag {
+  background:rgba(39,217,160,.10);border-color:rgba(39,217,160,.52);
+  color:var(--green);letter-spacing:.5px;
+}
+footer.status {
+  background:rgba(4,10,20,.98);border-top:1px solid rgba(37,186,255,.25);
+  padding:13px clamp(12px,2vw,28px);
+}
+footer.status b { color:#e3f2ff; }
+footer.status .dot { box-shadow:0 0 9px rgba(39,217,160,.55); }
+footer.status .dot.err { box-shadow:0 0 9px rgba(255,48,72,.55); }
+.toast {
+  background:#0b1c30;border-color:rgba(37,186,255,.38);
+  box-shadow:0 12px 32px rgba(0,0,0,.45),var(--glow-blue);
+}
+.toast.err { border-color:var(--red); }
+button:focus-visible,a:focus-visible,input:focus-visible {
+  outline:2px solid var(--accent);outline-offset:2px;
+}
+@media (max-width:700px) {
+  header.brand { align-items:flex-start;padding:16px 13px; }
+  header.brand h1 { letter-spacing:2px; }
+  header.brand .sub { letter-spacing:1.2px;line-height:1.5; }
+  .actions { width:100%; }
+  .actions button,.actions a { flex:1;text-align:center;white-space:nowrap;padding:8px 9px!important; }
+  section.kpi-strip { grid-template-columns:repeat(2,minmax(0,1fr));padding:13px 12px 0;gap:9px; }
+  .kpi { padding:12px; }
+  .kpi .val { font-size:14px; }
+  .kpi .meta { font-size:10px; }
+  main.workspace { padding:13px 12px 18px;gap:13px; }
+  .col-left,.col-right { gap:13px; }
+  .panel header { flex-wrap:wrap; }
+  .panel header input.search { min-width:0;width:100%; }
+  .panel.grow { max-height:460px;min-height:260px; }
+  .panel { border-radius:9px; }
+  footer.status { gap:9px 16px;font-size:11px; }
+  .log-box { font-size:10.5px; }
+  table.t-table { min-width:620px; }
+}
+@media (max-width:390px) {
+  header.brand h1 { font-size:21px; }
+  section.kpi-strip { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .kpi .label { font-size:9px;letter-spacing:1px; }
+  .kpi .val { font-size:13px; }
+  .actions button,.actions a { font-size:11px!important; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { scroll-behavior:auto!important;transition:none!important; }
+}
+</style>
+</head>
+<body>
+
+<header class="brand">
+  <div>
+    <h1>Koveer<span class="amp">Bridge</span></h1>
+    <div class="sub">SMARTER TRADING TOGETHER · LIVE INTELLIGENCE</div>
+  </div>
+  <div class="actions">
+    <button id="btnRefresh">⟳ Refresh Assets</button>
+    <button id="btnClear">✕ Stop All Assets</button>
+    <a href="http://127.0.0.1:8081/chart.html" target="_blank" id="btnChart" style="background: var(--panel-2); color: var(--text); border: 1px solid var(--border); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; text-decoration: none;">📈 Live Chart</a>
+    <button id="btnLang" class="lang-btn" title="Switch language">AR</button>
+  </div>
+</header>
+
+<section class="kpi-strip">
+  <div class="kpi" title="Bridge engine status">
+    <div class="label">Bridge Engine</div>
+    <div class="val" id="kpiRunner"><span class="pill err"><span class="dot-s"></span>OFFLINE</span></div>
+    <div class="meta" id="kpiUptime">Uptime: —</div>
+  </div>
+  <div class="kpi" title="WebSocket connection">
+    <div class="label">WebSocket Stream</div>
+    <div class="val" id="kpiWs"><span class="pill err"><span class="dot-s"></span>DISCONNECTED</span></div>
+    <div class="meta" id="kpiEndpoint">Endpoint: —</div>
+  </div>
+  <div class="kpi" title="Session & auth">
+    <div class="label">Session &amp; Auth (HAR)</div>
+    <div class="val" id="kpiHar">—</div>
+    <div class="meta" id="kpiUid">UID: —</div>
+  </div>
+  <div class="kpi" title="MT4 server time sync">
+    <div class="label">MT4 Time Sync</div>
+    <div class="val" id="kpiMt4">—</div>
+    <div class="meta" id="kpiOffset">Offset: —</div>
+  </div>
+  <div class="kpi" title="Traffic statistics">
+    <div class="label">Traffic Stats</div>
+    <div class="val mono" id="kpiTicks">0 ticks</div>
+    <div class="meta" id="kpiReconnects">Reconnects: 0</div>
+  </div>
+</section>
+
+<main class="workspace">
+  <div class="col-left">
+    <section class="panel grow">
+      <header>
+        <h2>Assets Catalog</h2>
+        <input type="text" class="search" id="assetSearch" placeholder="Search symbol…" />
+      </header>
+      <div class="scroll" id="assetsList"></div>
+    </section>
+
+    <section class="panel" style="max-height: 220px;">
+      <header>
+        <h2>MT4 Chart Templates</h2>
+      </header>
+      <div class="scroll" id="templatesList"></div>
+    </section>
+  </div>
+
+  <div class="col-right">
+    <section class="panel">
+      <header>
+        <h2>Smart Diagnostics &amp; Development Insights</h2>
+      </header>
+      <div class="insights-list" id="insightsBox"></div>
+    </section>
+
+    <section class="panel">
+      <header>
+        <h2>Active Assets Live Report (Stream &amp; Disk I/O)</h2>
+      </header>
+      <div style="overflow-x: auto;">
+        <table class="t-table">
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Status</th>
+              <th>Last Price</th>
+              <th>Tick Age</th>
+              <th>Ticks</th>
+              <th>Candles</th>
+              <th>CSV / HST</th>
+            </tr>
+          </thead>
+          <tbody id="telemetryTable">
+            <tr><td colspan="7" style="color:var(--muted); text-align:center;">No active assets</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header>
+        <h2>Live Runner Event Log</h2>
+      </header>
+      <div class="log-box" id="eventLogBox">
+        <div style="color:var(--muted);">Waiting for runner events…</div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="status">
+  <div><span class="dot" id="healthDot"></span>Active: <b id="activeCount">0</b> / 8</div>
+  <div>Template: <b id="curTemplate">—</b></div>
+  <div>Catalog: <b id="assetCount">—</b></div>
+  <div>Base: <b id="baseDir">—</b></div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let state = { active_assets: [], template: "—", asset_count: 0 };
+let assets = {};
+let currentFilter = "";
+let currentLang = localStorage.getItem("kover_lang") || "ar";
+let telemetryInterval = null;
+let templatesInterval = null;
+
+// ── i18n helper: append lang to any API URL ─────────────────────────────
+function withLang(url) {
+  const sep = url.includes("?") ? "&" : "?";
+  return url + sep + "lang=" + currentLang;
+}
+
+function toast(msg, err = false) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.toggle("err", !!err);
+  t.classList.add("show");
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+function fmtDuration(sec) {
+  if (!sec || sec < 0) return "0s";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+async function jget(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+async function jpost(url, body) {
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body || {})
+  });
+  return r.json();
+}
+
+async function loadState() {
+  try {
+    state = await jget("/api/state");
+    $("activeCount").textContent = state.active_count;
+    $("curTemplate").textContent = state.template;
+    $("assetCount").textContent = state.asset_count;
+    $("baseDir").textContent = state.base_dir;
+  } catch (e) {}
+}
+
+async function loadTelemetry() {
+  try {
+    const t = await jget(withLang("/api/telemetry"));
+
+    $("kpiRunner").innerHTML = t.runner_alive
+      ? `<span class="pill ok"><span class="dot-s"></span>RUNNING</span>`
+      : `<span class="pill err"><span class="dot-s"></span>OFFLINE</span>`;
+    $("kpiUptime").textContent = t.runner_alive
+      ? `Uptime: ${fmtDuration(t.uptime_sec)}`
+      : (t.stale_sec !== null ? `Last seen ${t.stale_sec}s ago` : "Start multi_runner_2.py");
+
+    $("kpiWs").innerHTML = t.ws_connected
+      ? `<span class="pill ok"><span class="dot-s"></span>CONNECTED</span>`
+      : `<span class="pill err"><span class="dot-s"></span>DISCONNECTED</span>`;
+    const host = (t.ws_endpoint || "").split("/")[2] || "—";
+    $("kpiEndpoint").textContent = `Host: ${host}`;
+
+    if (t.har_age_hours === null) {
+      $("kpiHar").innerHTML = `<span class="pill err">MISSING</span>`;
+    } else if (t.har_age_hours > 12) {
+      $("kpiHar").innerHTML = `<span class="pill warn">${t.har_age_hours}h old</span>`;
+    } else {
+      $("kpiHar").innerHTML = `<span class="pill ok">${t.har_age_hours}h old</span>`;
+    }
+    $("kpiUid").textContent = `Demo UID: ${t.uid || "—"}`;
+
+    $("kpiMt4").innerHTML = t.mt4_sync_ok
+      ? `<span class="pill ok">SYNCED</span>`
+      : `<span class="pill warn">MANUAL / STALE</span>`;
+    $("kpiOffset").textContent = t.mt4_offset_sec !== null
+      ? `Server Offset: ${t.mt4_offset_sec}s`
+      : "mt4_server_time.txt not active";
+
+    const ticks = (t.client_stats && t.client_stats.tick_msgs) || 0;
+    $("kpiTicks").textContent = `${ticks.toLocaleString()} ticks`;
+    $("kpiReconnects").textContent = `Reconnects: ${t.reconnect_count || 0}`;
+
+    // Health dot
+    const hd = $("healthDot");
+    if (t.runner_alive && t.ws_connected) hd.classList.remove("err");
+    else hd.classList.add("err");
+
+    const ibox = $("insightsBox");
+    ibox.innerHTML = "";
+    for (const item of (t.insights || [])) {
+      const div = document.createElement("div");
+      div.className = `insight ${item.type || "info"}`;
+      div.innerHTML = `<div class="ititle">${item.title}</div><div class="idetail">${item.detail}</div>`;
+      ibox.appendChild(div);
+    }
+
+    const tbody = $("telemetryTable");
+    if (!t.assets || t.assets.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="color:var(--muted); text-align:center;">No active assets selected</td></tr>`;
+    } else {
+      tbody.innerHTML = t.assets.map(a => {
+        let badge = `<span class="pill err">OFFLINE</span>`;
+        if (a.health === "healthy") badge = `<span class="pill ok">LIVE</span>`;
+        else if (a.health === "starting") badge = `<span class="pill warn">LOADING</span>`;
+        else if (a.health === "slow") badge = `<span class="pill warn">SLOW</span>`;
+        else if (a.health === "stalled") badge = `<span class="pill err">STALLED</span>`;
+
+        const age = a.tick_age_sec !== null ? `${a.tick_age_sec}s` : "—";
+        const price = a.last_price !== null ? Number(a.last_price).toFixed(a.digits || 5) : "—";
+        return `
+          <tr>
+            <td><b>${a.asset}</b></td>
+            <td>${badge}</td>
+            <td class="mono">${price}</td>
+            <td class="mono">${age}</td>
+            <td class="mono">${a.tick_count}</td>
+            <td class="mono">${a.candles_count}</td>
+            <td class="mono">${a.csv_kb}K / ${a.hst_kb}K</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    const lbox = $("eventLogBox");
+    if (!t.events || t.events.length === 0) {
+      lbox.innerHTML = `<div style="color:var(--muted);">No events recorded yet…</div>`;
+    } else {
+      lbox.innerHTML = t.events.map(ev => `
+        <div class="log-row">
+          <span class="log-ts">[${ev.ts}]</span>
+          <span class="log-lvl-${ev.level || "info"}">${ev.msg}</span>
+        </div>
+      `).join("");
+    }
+  } catch (e) {}
+}
+
+async function loadAssets() {
+  try {
+    assets = await jget("/api/assets");
+    renderAssets();
+  } catch (e) {
+    toast("Failed to load assets: " + e.message, true);
+  }
+}
+
+function renderAssets() {
+  const list = $("assetsList");
+  list.innerHTML = "";
+  const filter = currentFilter.toLowerCase();
+  const activeSet = new Set(state.active_assets || []);
+  const cats = [
+    ["otc_forex", "OTC · Forex"],
+    ["otc_commodities", "OTC · Commodities"],
+    ["otc_crypto", "OTC · Crypto"],
+    ["otc_stocks", "OTC · Stocks"],
+    ["otc_indices", "OTC · Indices"],
+    ["regular", "Regular (Market Hours)"],
+  ];
+  let shown = 0;
+  for (const [key, label] of cats) {
+    const items = (assets[key] || []).filter(s =>
+      !filter || s.toLowerCase().includes(filter)
+    );
+    if (items.length === 0) continue;
+    const h = document.createElement("div");
+    h.className = "cat";
+    h.textContent = label + "  (" + items.length + ")";
+    list.appendChild(h);
+    for (const sym of items) {
+      const isActive = activeSet.has(sym);
+      const div = document.createElement("div");
+      div.className = "item" + (isActive ? " active" : "");
+      const btn = isActive
+        ? `<button class="btn-remove" data-sym="${sym}">− Remove</button>`
+        : `<button class="btn-add"    data-sym="${sym}">+ Add</button>`;
+      div.innerHTML = `<span>${sym}${isActive ? '<span class="active-tag">RUNNING</span>' : ''}</span><span class="badge">${btn}</span>`;
+      list.appendChild(div);
+      shown++;
+    }
+  }
+  if (shown === 0) {
+    const empty = document.createElement("div");
+    empty.className = "cat";
+    empty.textContent = "No matches";
+    list.appendChild(empty);
+  }
+
+  list.querySelectorAll(".btn-add").forEach(b => {
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      addAsset(b.dataset.sym);
+    });
+  });
+  list.querySelectorAll(".btn-remove").forEach(b => {
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      removeAsset(b.dataset.sym);
+    });
+  });
+}
+
+async function addAsset(name) {
+  try {
+    const res = await jpost("/api/active/add", { name });
+    if (res.ok) {
+      toast("Added: " + name);
+      await loadState();
+      renderAssets();
+      await loadTelemetry();
+    } else {
+      toast("Add failed", true);
+    }
+  } catch (e) { toast("Add failed: " + e.message, true); }
+}
+
+async function removeAsset(name) {
+  try {
+    const res = await jpost("/api/active/remove", { name });
+    if (res.ok) {
+      toast("Removed: " + name);
+      await loadState();
+      renderAssets();
+      await loadTelemetry();
+    } else {
+      toast("Remove failed", true);
+    }
+  } catch (e) { toast("Remove failed: " + e.message, true); }
+}
+
+async function loadTemplates() {
+  try {
+    const items = await jget("/api/templates");
+    const list = $("templatesList");
+    list.innerHTML = "";
+    if (items.length === 0) {
+      const d = document.createElement("div");
+      d.className = "cat";
+      d.textContent = "No templates yet — save one from MT4 first.";
+      list.appendChild(d);
+      return;
+    }
+    for (const name of items) {
+      const div = document.createElement("div");
+      const active = name === state.template;
+      div.className = "item" + (active ? " active" : "");
+      div.innerHTML = `<span>${name}</span><span class="badge">${active ? "ACTIVE" : ".tpl"}</span>`;
+      div.addEventListener("click", () => selectTemplate(name));
+      list.appendChild(div);
+    }
+  } catch (e) {}
+}
+
+async function selectTemplate(name) {
+  try {
+    const res = await jpost("/api/template", { name });
+    if (res.ok) {
+      toast("Template: " + name);
+      await loadState();
+      await loadTemplates();
+    }
+  } catch (e) {}
+}
+
+// ── Language toggle ─────────────────────────────────────────────────────
+function applyLang() {
+  $("btnLang").textContent = currentLang === "ar" ? "EN" : "AR";
+  document.documentElement.lang = currentLang;
+  // Refresh telemetry with new language
+  loadTelemetry();
+}
+
+$("btnLang").addEventListener("click", () => {
+  currentLang = currentLang === "ar" ? "en" : "ar";
+  localStorage.setItem("kover_lang", currentLang);
+  applyLang();
+});
+
+$("btnRefresh").addEventListener("click", async () => {
+  const btn = $("btnRefresh");
+  btn.disabled = true;
+  const old = btn.textContent;
+  btn.textContent = "⟳ Refreshing…";
+  try {
+    const res = await jpost("/api/assets/refresh", {});
+    if (res.ok) {
+      toast("Assets refreshed: " + res.asset_count);
+      await loadAssets();
+      await loadState();
+    } else {
+      toast("Refresh failed: " + (res.error || "unknown"), true);
+    }
+  } catch (e) { toast("Refresh failed: " + e.message, true); }
+  finally { btn.disabled = false; btn.textContent = old; }
+});
+
+$("btnClear").addEventListener("click", async () => {
+  if (!confirm("Stop all running assets?")) return;
+  try {
+    await jpost("/api/active/clear", {});
+    toast("All cleared");
+    await loadState();
+    renderAssets();
+    await loadTelemetry();
+  } catch (e) { toast("Clear failed: " + e.message, true); }
+});
+
+$("assetSearch").addEventListener("input", (e) => {
+  currentFilter = e.target.value.trim();
+  renderAssets();
+});
+
+// ── Pause polling when tab is hidden (battery saving) ───────────────────
+function startIntervals() {
+  if (telemetryInterval) return;
+  telemetryInterval = setInterval(async () => {
+    if (document.hidden) return;
+    await loadState();
+    renderAssets();
+    await loadTelemetry();
+  }, 1000);
+  templatesInterval = setInterval(() => {
+    if (document.hidden) return;
+    loadTemplates();
+  }, 10000);
+}
+
+function stopIntervals() {
+  if (telemetryInterval) {
+    clearInterval(telemetryInterval);
+    telemetryInterval = null;
+  }
+  if (templatesInterval) {
+    clearInterval(templatesInterval);
+    templatesInterval = null;
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopIntervals();
+  else startIntervals();
+});
+
+async function init() {
+  applyLang();
+  await loadState();
+  await loadAssets();
+  await loadTemplates();
+  await loadTelemetry();
+  startIntervals();
+}
+
+init();
+</script>
+</body>
+</html>
+
