@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>KoveerBridge — Trading Intelligence Command Center</title>
+<link rel="preload" as="image" href="/static/images/koveer-background.jpg">
 <style>
   :root {
     --bg: #0b1020;
@@ -236,7 +236,6 @@
 
 /* ============================================================
    KOVEERBRIDGE CINEMATIC IDENTITY
-   Presentation layer only — original API and JavaScript retained.
    ============================================================ */
 :root {
   --bg: #050914;
@@ -254,15 +253,10 @@
 }
 * { box-sizing: border-box; }
 html, body { min-height:100%; }
-html { background:#050914; }
 body {
   color:var(--text);
-  background:
-    radial-gradient(ellipse at 12% 0%, rgba(0,139,255,.16), transparent 34%),
-    radial-gradient(ellipse at 94% 12%, rgba(255,35,65,.10), transparent 29%),
-    radial-gradient(ellipse at 50% 100%, rgba(0,77,142,.12), transparent 42%),
-    linear-gradient(145deg,#040812 0%,#071326 52%,#050914 100%);
-  background-attachment:fixed;
+  background: none !important;
+  background-color: transparent !important;
 }
 header.brand {
   position:relative;
@@ -420,6 +414,73 @@ button:focus-visible,a:focus-visible,input:focus-visible {
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { scroll-behavior:auto!important;transition:none!important; }
 }
+
+/* ============================================================
+   KOVEER BRIDGE — FULLSCREEN FIXED BACKGROUND (ALWAYS COVER)
+   ============================================================ */
+html {
+  background-color: #050914;
+  min-height: 100%;
+}
+
+body {
+  background: none !important;
+  background-color: transparent !important;
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image: url("/static/images/koveer-background.jpg");
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-color: #050914;
+  pointer-events: none;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    rgba(3, 8, 18, 0.55),
+    rgba(3, 8, 18, 0.72)
+  );
+  pointer-events: none;
+}
+
+header.brand {
+  background: rgba(3, 9, 20, 0.82) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.kpi,
+.panel {
+  background: rgba(5, 17, 32, 0.82) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+footer.status {
+  background: rgba(3, 9, 20, 0.88) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@media (max-width: 700px) {
+  .kpi, .panel, header.brand, footer.status {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
 </style>
 </head>
 <body>
@@ -544,7 +605,6 @@ let currentLang = localStorage.getItem("kover_lang") || "ar";
 let telemetryInterval = null;
 let templatesInterval = null;
 
-// ── i18n helper: append lang to any API URL ─────────────────────────────
 function withLang(url) {
   const sep = url.includes("?") ? "&" : "?";
   return url + sep + "lang=" + currentLang;
@@ -630,7 +690,6 @@ async function loadTelemetry() {
     $("kpiTicks").textContent = `${ticks.toLocaleString()} ticks`;
     $("kpiReconnects").textContent = `Reconnects: ${t.reconnect_count || 0}`;
 
-    // Health dot
     const hd = $("healthDot");
     if (t.runner_alive && t.ws_connected) hd.classList.remove("err");
     else hd.classList.add("err");
@@ -812,11 +871,9 @@ async function selectTemplate(name) {
   } catch (e) {}
 }
 
-// ── Language toggle ─────────────────────────────────────────────────────
 function applyLang() {
   $("btnLang").textContent = currentLang === "ar" ? "EN" : "AR";
   document.documentElement.lang = currentLang;
-  // Refresh telemetry with new language
   loadTelemetry();
 }
 
@@ -860,7 +917,6 @@ $("assetSearch").addEventListener("input", (e) => {
   renderAssets();
 });
 
-// ── Pause polling when tab is hidden (battery saving) ───────────────────
 function startIntervals() {
   if (telemetryInterval) return;
   telemetryInterval = setInterval(async () => {
@@ -904,4 +960,3 @@ init();
 </script>
 </body>
 </html>
-

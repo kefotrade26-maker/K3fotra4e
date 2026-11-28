@@ -33,3 +33,12 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+run/
+logs/
+__pycache__/
+*.pyc
+Reports/
+telemetry/
+*.har
+*.log
+strict/
